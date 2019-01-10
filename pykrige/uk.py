@@ -174,6 +174,8 @@ class UniversalKriging:
         Default is False (off).
     enable_plotting : boolean, optional
         Enables plotting to display variogram. Default is False (off).
+    enable_statistics : bool, optional
+        Unlike ordinary kriging, default is True to match legacy behavior
 
     References
     ----------
@@ -197,7 +199,7 @@ class UniversalKriging:
                  drift_terms=None, point_drift=None, external_drift=None,
                  external_drift_x=None, external_drift_y=None,
                  specified_drift=None, functional_drift=None,
-                 verbose=False, enable_plotting=False):
+                 verbose=False, enable_plotting=False, enable_statistics=True):
 
         # Deal with mutable default argument
         if drift_terms is None:
@@ -287,14 +289,17 @@ class UniversalKriging:
 
         if self.verbose:
             print("Calculating statistics on variogram model fit...")
-        self.delta, self.sigma, self.epsilon = \
-            _find_statistics(np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
-                             self.Z, self.variogram_function,
-                             self.variogram_model_parameters,
-                             'euclidean')
-        self.Q1 = core.calcQ1(self.epsilon)
-        self.Q2 = core.calcQ2(self.epsilon)
-        self.cR = core.calc_cR(self.Q2, self.sigma)
+        if enable_statistics:
+            self.delta, self.sigma, self.epsilon = \
+                _find_statistics(np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
+                                 self.Z, self.variogram_function,
+                                 self.variogram_model_parameters,
+                                 'euclidean')
+            self.Q1 = core.calcQ1(self.epsilon)
+            self.Q2 = core.calcQ2(self.epsilon)
+            self.cR = core.calc_cR(self.Q2, self.sigma)
+        else:
+            self.delta, self.sigma, self.epsilon, self.Q1, self.Q2, self.cR = [None]*6
         if self.verbose:
             print("Q1 =", self.Q1)
             print("Q2 =", self.Q2)
